@@ -5,6 +5,7 @@ from alphalens.core import synthetic_case, investigate, report_json
 from alphalens.agent import investigate_with_agent
 from alphalens.fixed_income import Bond, price, risk_measures, rate_shock
 from alphalens.portfolio import Holding, portfolio_scenario
+from alphalens.benchmark import evaluate_timing_benchmark
 
 st.set_page_config(page_title="PAED AlphaLens", page_icon="📊", layout="wide")
 st.title("PAED AlphaLens")
@@ -14,7 +15,7 @@ st.write("Investigate quantitative trading hypotheses with reproducible Python a
 case = st.radio("Select research trial", ["The Strategy That Knew Tomorrow", "Clean timing control"])
 cost = st.slider("Trading cost in basis points", 0.0, 20.0, 1.0, 0.5)
 df = synthetic_case(case.startswith("The Strategy"))
-t1, t2, t3, t4 = st.tabs(["Research Trial", "Nemotron Investigator", "Bond Risk Laboratory", "Portfolio Stress Test"])
+t1, t2, t3, t4, t5 = st.tabs(["Research Trial", "Nemotron Investigator", "Bond Risk Laboratory", "Portfolio Stress Test", "Evidence Benchmark"])
 with t1:
     st.caption("Known labelled synthetic case. The result is not discovered autonomously.")
     if st.button("Run research trial"):
@@ -105,3 +106,18 @@ with t4:
         st.json(result)
     st.download_button("Download portfolio evidence",json.dumps(result,indent=2),
                        file_name="portfolio_scenario.json",mime="application/json")
+
+with t5:
+    st.subheader("Evidence Benchmark")
+    st.write("Test our timing diagnostic against clean and deliberately flawed synthetic strategies. This is not an LLM accuracy score or a percentage of truth.")
+    n_seeds = st.slider("Independent synthetic seeds", 5, 50, 20, 5)
+    if st.button("Run benchmark"):
+        result=evaluate_timing_benchmark(range(n_seeds))
+        a,b,c=st.columns(3)
+        a.metric("Synthetic classification accuracy",f"{result['accuracy']:.1%}")
+        b.metric("Precision",f"{result['precision']:.1%}" if result['precision'] is not None else "Undefined")
+        c.metric("Recall",f"{result['recall']:.1%}" if result['recall'] is not None else "Undefined")
+        st.caption(result["limitation"])
+        st.dataframe(result["rows"],hide_index=True,width="stretch")
+        st.download_button("Download benchmark report",json.dumps(result,indent=2),
+                           file_name="synthetic_benchmark.json",mime="application/json")
