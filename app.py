@@ -34,7 +34,9 @@ with tabs[0]:
     flawed=case.startswith("The Strategy")
     df=synthetic_case(flawed)
     if st.button("Run research trial",type="primary"):
+        st.session_state["trial_result"] = None
         finding,chart=investigate(df,flawed,cost)
+        st.session_state["trial_result"] = {"finding":finding,"chart":chart,"case":case,"cost":cost}
         a,b=st.columns(2)
         a.metric("Reported Sharpe",f"{finding.original_sharpe:.2f}")
         b.metric("Timing adjusted Sharpe",f"{finding.corrected_sharpe:.2f}")
@@ -144,7 +146,9 @@ with tabs[4]:
     st.write("Test the timing signature against intentionally flawed and clean synthetic constructions.")
     n=st.slider("Synthetic seeds",5,50,20,5)
     if st.button("Run evidence benchmark",type="primary"):
-        results=evaluate_timing_benchmark(range(n))
+        st.session_state["benchmark_result"]=evaluate_timing_benchmark(range(n))
+    if "benchmark_result" in st.session_state:
+        results=st.session_state["benchmark_result"]
         a,b,c=st.columns(3)
         a.metric("Synthetic accuracy",f"{results['accuracy']:.1%}")
         b.metric("Precision",f"{results['precision']:.1%}" if results['precision'] is not None else "Undefined")
