@@ -8,6 +8,8 @@ from alphalens.fixed_income import Bond, risk_measures, rate_shock
 from alphalens.portfolio import Holding, portfolio_scenario
 from alphalens.benchmark import evaluate_timing_benchmark
 from alphalens.theme import CSS
+from alphalens.macro import macro_scenarios
+from alphalens.paper_audit import audit_text
 
 st.set_page_config(page_title="PAED AlphaLens | Research Evidence", page_icon="A", layout="wide")
 st.markdown("<style>"+CSS+"</style>", unsafe_allow_html=True)
@@ -22,7 +24,7 @@ st.markdown('<div class="al-intro">A research validation workspace for investiga
 view=st.radio("Explanation detail",["Explore | Plain language","Research | Mathematical detail"],
               horizontal=True, help="Change how results are explained. Both modes use the same deterministic calculations.")
 research_mode=view.startswith("Research")
-tabs=st.tabs(["01  Research Trial","02  Nemotron Investigator","03  Bond Risk","04  Portfolio Stress","05  Evidence Benchmark"])
+tabs=st.tabs(["01  Research Trial","02  Nemotron Investigator","03  Bond Risk","04  Portfolio Stress","05  Evidence Benchmark","06  Macro Scenarios","07  Claim Audit"])
 with tabs[0]:
     st.markdown('<div class="al-kicker">01 / Strategy investigation</div>',unsafe_allow_html=True)
     st.header("The Strategy That Knew Tomorrow")
@@ -152,5 +154,39 @@ with tabs[4]:
         with st.expander("Confusion matrix | Exact counts"):
             st.json({k:results[k] for k in ["cases","true_positive","true_negative","false_positive","false_negative","false_positive_rate"]})
         st.download_button("Export benchmark evidence",json.dumps(results,indent=2),"synthetic_benchmark.json","application/json")
+with tabs[5]:
+    st.markdown('<div class="al-kicker">06 / Macroeconomic scenario engine</div>',unsafe_allow_html=True)
+    st.header("Macro Scenario Laboratory")
+    st.write("Explore transparent hypothetical shocks to inflation, policy rates and economic growth. These are scenarios, not forecasts.")
+    m1,m2,m3=st.columns(3)
+    with m1:
+        inflation=st.number_input("Baseline inflation (%)",value=2.5,min_value=-10.0,max_value=30.0,step=0.25)
+    with m2:
+        policy=st.number_input("Baseline policy rate (%)",value=4.0,min_value=-10.0,max_value=30.0,step=0.25)
+    with m3:
+        growth=st.number_input("Baseline GDP growth (%)",value=1.5,min_value=-10.0,max_value=30.0,step=0.25)
+    scenarios=macro_scenarios(inflation,policy,growth)
+    st.dataframe(scenarios["scenarios"],hide_index=True,width="stretch")
+    st.markdown('<div class="al-warning"><b>What this proves</b><br>Only the outputs of explicitly assumed shocks. The changes are not estimated with historical data and are not probabilistic forecasts.</div>',unsafe_allow_html=True)
+    st.download_button("Export macro assumptions and scenarios",json.dumps(scenarios,indent=2),"macro_scenarios.json","application/json")
+with tabs[6]:
+    st.markdown('<div class="al-kicker">07 / Research claim extraction</div>',unsafe_allow_html=True)
+    st.header("Research Claim Audit")
+    st.write("Paste a passage from research you have rights to use. AlphaLens marks candidate financial claims for human verification; it does not certify their truth.")
+    passage=st.text_area("Research passage",height=180,placeholder="Example: Our strategy achieved a Sharpe ratio of 2.1, with annual returns of 12%.")
+    if st.button("Extract claims",type="primary"):
+        try:
+            audit=audit_text(passage)
+            st.metric("Candidate claims",len(audit["candidate_claims"]))
+            if audit["candidate_claims"]:
+                st.dataframe(audit["candidate_claims"],hide_index=True,width="stretch")
+            else:
+                st.info("No candidate financial claims detected by the keyword heuristic.")
+            st.warning("All extracted claims remain UNVERIFIED. Source publication dates, datasets, code and statistical assumptions require separate checking.")
+            with st.expander("Evidence fingerprint and limitations"):
+                st.json({"source_sha256":audit["source_sha256"],"limitations":audit["limitations"]})
+            st.download_button("Export claim audit",json.dumps(audit,indent=2),"claim_audit.json","application/json")
+        except ValueError as e:
+            st.error(str(e))
 st.divider()
 st.caption("PAED AlphaLens | Reproducible research prototype. Synthetic examples, not investment advice. Live AI investigation requires Nebius access.")
