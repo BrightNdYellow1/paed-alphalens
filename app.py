@@ -9,7 +9,7 @@ from alphalens.portfolio import Holding, portfolio_scenario
 from alphalens.benchmark import evaluate_timing_benchmark
 from alphalens.theme import CSS
 
-st.set_page_config(page_title="PAED AlphaLens | Research Evidence", page_icon="🔎", layout="wide")
+st.set_page_config(page_title="PAED AlphaLens | Research Evidence", page_icon="A", layout="wide")
 st.markdown("<style>"+CSS+"</style>", unsafe_allow_html=True)
 st.markdown("""<section class="al-hero">
 <div class="al-eyebrow">Quantitative Research Intelligence</div>
