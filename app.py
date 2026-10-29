@@ -11,7 +11,7 @@ from alphalens.theme import CSS
 from alphalens.macro import macro_scenarios
 from alphalens.paper_audit import audit_text
 
-st.set_page_config(page_title="PAED AlphaLens | Research Evidence", page_icon="A", layout="wide")
+st.set_page_config(page_title="PAED AlphaLens | Research Evidence", page_icon="🔎", layout="wide")
 st.markdown("<style>"+CSS+"</style>", unsafe_allow_html=True)
 st.markdown("""<section class="al-hero">
 <div class="al-eyebrow">Quantitative Research Intelligence</div>
