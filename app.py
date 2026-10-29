@@ -100,7 +100,7 @@ with t4:
     aa.metric("Starting portfolio value",f"{result['value_before']:,.2f}")
     bb.metric("Portfolio change",f"{result['change_pct']:+.2f}%")
     cc.metric("Weighted modified duration",f"{result['weighted_modified_duration']:.2f}")
-    st.dataframe(result["positions"],hide_index=True,use_container_width=True)
+    st.dataframe(result["positions"],hide_index=True,width='stretch')
     with st.expander("Show Me Why: Portfolio evidence"):
         st.json(result)
     st.download_button("Download portfolio evidence",json.dumps(result,indent=2),
