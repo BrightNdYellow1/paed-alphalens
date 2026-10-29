@@ -4,6 +4,7 @@ import streamlit as st
 from alphalens.core import synthetic_case, investigate, report_json
 from alphalens.agent import investigate_with_agent
 from alphalens.fixed_income import Bond, price, risk_measures, rate_shock
+from alphalens.portfolio import Holding, portfolio_scenario
 
 st.set_page_config(page_title="PAED AlphaLens", page_icon="📊", layout="wide")
 st.title("PAED AlphaLens")
@@ -13,7 +14,7 @@ st.write("Investigate quantitative trading hypotheses with reproducible Python a
 case = st.radio("Select research trial", ["The Strategy That Knew Tomorrow", "Clean timing control"])
 cost = st.slider("Trading cost in basis points", 0.0, 20.0, 1.0, 0.5)
 df = synthetic_case(case.startswith("The Strategy"))
-t1, t2, t3 = st.tabs(["Research Trial", "Nemotron Investigator", "Bond Risk Laboratory"])
+t1, t2, t3, t4 = st.tabs(["Research Trial", "Nemotron Investigator", "Bond Risk Laboratory", "Portfolio Stress Test"])
 with t1:
     st.caption("Known labelled synthetic case. The result is not discovered autonomously.")
     if st.button("Run research trial"):
@@ -78,3 +79,29 @@ with t3:
     st.download_button("Download bond scenario evidence",
                        json.dumps({"risk":measures,"scenario":scenario},indent=2),
                        file_name="bond_scenario.json", mime="application/json")
+
+with t4:
+    st.subheader("Portfolio Stress Test")
+    st.caption("Two illustrative bonds under the same parallel interest rate shock. No market forecast.")
+    col1,col2=st.columns(2)
+    with col1:
+        first_years=st.slider("Bond A maturity (years)",1,30,3)
+        first_units=st.number_input("Bond A units",1,1000,10)
+    with col2:
+        second_years=st.slider("Bond B maturity (years)",1,30,10)
+        second_units=st.number_input("Bond B units",1,1000,5)
+    portfolio_yield=st.slider("Portfolio baseline yield (%)",0.0,15.0,4.5,0.25)
+    portfolio_shock=st.slider("Parallel rate shock (bps)",-300,300,100,25,key="portfolio_shock")
+    holdings=[
+        Holding(Bond(years=first_years,yield_rate=portfolio_yield/100),first_units),
+        Holding(Bond(years=second_years,yield_rate=portfolio_yield/100),second_units)]
+    result=portfolio_scenario(holdings,portfolio_shock)
+    aa,bb,cc=st.columns(3)
+    aa.metric("Starting portfolio value",f"{result['value_before']:,.2f}")
+    bb.metric("Portfolio change",f"{result['change_pct']:+.2f}%")
+    cc.metric("Weighted modified duration",f"{result['weighted_modified_duration']:.2f}")
+    st.dataframe(result["positions"],hide_index=True,use_container_width=True)
+    with st.expander("Show Me Why: Portfolio evidence"):
+        st.json(result)
+    st.download_button("Download portfolio evidence",json.dumps(result,indent=2),
+                       file_name="portfolio_scenario.json",mime="application/json")
