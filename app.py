@@ -24,6 +24,10 @@ st.markdown('<div class="al-intro">A research validation workspace for investiga
 view=st.radio("Explanation detail",["Explore | Plain language","Research | Mathematical detail"],
               horizontal=True, help="Change how results are explained. Both modes use the same deterministic calculations.")
 research_mode=view.startswith("Research")
+st.markdown('<div class="al-kicker">INVESTIGATE / TEST / EXPLAIN / REPRODUCE</div>',unsafe_allow_html=True)
+with st.expander("How the evidence engine works", expanded=False):
+    st.markdown("**1. Research claim** → **2. Approved numerical checks** → **3. Counterfactual** → **4. Evidence verdict** → **5. Export and reproduce**")
+    st.caption("Mathematical tests execute in Python. When configured, NVIDIA Nemotron plans and explains selected checks. Language model output is not treated as independent proof.")
 tabs=st.tabs(["01  Research Trial","02  Nemotron Investigator","03  Bond Risk","04  Portfolio Stress","05  Evidence Benchmark","06  Macro Scenarios","07  Claim Audit"])
 with tabs[0]:
     st.markdown('<div class="al-kicker">01 / Strategy investigation</div>',unsafe_allow_html=True)
@@ -44,6 +48,11 @@ with tabs[0]:
         st.write(finding.validity)
         st.write(finding.explanation)
         st.line_chart(chart.rename(columns={"original":"Reported equity","corrected":"Adjusted equity"}))
+        with st.expander("Inspect the information timeline"):
+            timeline=df[["period","market_return","position"]].head(35).copy()
+            timeline.columns=["Period","Market return","Strategy position"]
+            st.dataframe(timeline,hide_index=True,width="stretch")
+            st.caption("The future-aware case takes the sign of the current return as its current-period position. A realistic trade cannot rely on an outcome unknown at execution.")
         if research_mode:
             st.markdown('<div class="al-note"><b>Method</b><br>Sharpe estimates annualised return divided by observed return volatility with an assumed zero risk free rate. The counterfactual shifts the known flawed signal by one period.</div>',unsafe_allow_html=True)
         else:
