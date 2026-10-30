@@ -2,7 +2,7 @@
 import hashlib
 import re
 
-CLAIM_PATTERN=re.compile(r"\b(?:sharpe|return|alpha|accuracy|predict|profit|outperform|risk|bias|significant|p.value|forecast|yield|causal)\b",re.I)
+CLAIM_PATTERN=re.compile(r"\b(?:sharpe|returns?|alpha|accuracy|predict(?:s|ed|ion|ive)?|profit(?:s|able)?|outperform(?:s|ed|ance)?|risk|bias|significant|p.value|forecast(?:s|ing)?|yields?|causal)\b",re.I)
 NUM_PATTERN=re.compile(r"(?<!\w)(?:\d+(?:\.\d+)?%?|p\s*[<=>]\s*0?\.\d+)(?!\w)",re.I)
 def audit_text(text, max_chars=100000):
     if not isinstance(text,str) or not text.strip() or len(text)>max_chars:
