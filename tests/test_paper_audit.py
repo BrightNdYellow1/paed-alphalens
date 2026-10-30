@@ -8,6 +8,7 @@ def test_extracts_candidate_claim():
 
 def test_does_not_invent_validation():
     d=audit_text("Returns increased 12%.")
+    assert len(d["candidate_claims"]) == 1
     assert all(r["status"]=="UNVERIFIED" for r in d["candidate_claims"])
 
 def test_reproducible_hash():
