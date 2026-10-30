@@ -162,7 +162,7 @@ with tabs[4]:
         a.metric("Synthetic accuracy",f"{results['accuracy']:.1%}")
         b.metric("Precision",f"{results['precision']:.1%}" if results['precision'] is not None else "Undefined")
         c.metric("Recall",f"{results['recall']:.1%}" if results['recall'] is not None else "Undefined")
-        st.markdown('<div class="al-warning"><b>Scope of measurement</b><br>This is not a truth percentage, a Nemotron benchmark or proof of performance on real historical markets. The synthetic cases share controlled patterns with the test rule.</div>',unsafe_allow_html=True)
+        st.markdown('<div class="al-warning"><b>Scope of measurement</b><br>This is not a truth percentage or a Nemotron benchmark, and it is not proof of performance on real historical markets. The synthetic cases share controlled patterns with the test rule.</div>',unsafe_allow_html=True)
         st.dataframe(results["rows"],hide_index=True,width="stretch")
         with st.expander("Confusion matrix | Exact counts"):
             st.json({k:results[k] for k in ["cases","true_positive","true_negative","false_positive","false_negative","false_positive_rate"]})
