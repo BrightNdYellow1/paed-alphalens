@@ -90,7 +90,7 @@ with tabs[1]:
                                    "nemotron_evidence.json","application/json")
             except Exception as e:
                 st.error("Model investigation unsuccessful. Inspect model availability, credits and API configuration.")
-                st.code(str(e))
+                st.caption("For security, detailed API errors are not displayed publicly. Verify the model ID, API endpoint, available balance and private secret configuration.")
 
 with tabs[2]:
     st.markdown('<div class="al-kicker">03 / Fixed income analytics</div>',unsafe_allow_html=True)
@@ -189,7 +189,13 @@ with tabs[6]:
     passage=st.text_area("Research passage",height=180,placeholder="Example: Our strategy achieved a Sharpe ratio of 2.1, with annual returns of 12%.")
     if st.button("Extract claims",type="primary"):
         try:
-            audit=audit_text(passage)
+            st.session_state["claim_audit_result"]=audit_text(passage)
+        except ValueError as e:
+            st.session_state.pop("claim_audit_result",None)
+            st.error(str(e))
+    if "claim_audit_result" in st.session_state:
+        try:
+            audit=st.session_state["claim_audit_result"]
             st.metric("Candidate claims",len(audit["candidate_claims"]))
             if audit["candidate_claims"]:
                 st.dataframe(audit["candidate_claims"],hide_index=True,width="stretch")
