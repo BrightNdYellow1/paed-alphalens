@@ -143,3 +143,30 @@ data for the portfolio demonstration.
 
 Azure deployment and cloud scheduling require an Azure environment. The batch
 runner does not provision infrastructure or schedule itself.
+
+### Failure and recovery verification
+
+A local filesystem run verified a 420-row synthetic batch and checked each
+published artifact against its manifest checksum. A separate three-row input
+with duplicate period IDs was rejected with `Invalid data order or missing entries`.
+Only the original raw CSV was retained for that batch. Correcting the duplicate
+period ID and reprocessing created a new batch with a different source hash,
+three validated rows and matching output checksums. This was a deliberate
+failure drill, not a production incident.
+
+To repeat the drill against an existing Azure Blob Storage container, run this
+from the repository root with an Azure CLI session that has Storage Blob Data
+Contributor access scoped to the container:
+
+```bash
+python -m pip install -r requirements-azure.txt
+python -m scripts.verify_blob_pipeline \
+  --azure-account-url https://YOUR_ACCOUNT.blob.core.windows.net \
+  --container alphalens | tee azure-verification.json
+```
+
+The verifier uploads synthetic inputs into a unique verification prefix,
+downloads artifacts to compare their hashes, checks that the rejected batch
+contains only the unchanged raw input, and verifies the corrected batch.
+The commands require an existing account and container. Live Azure results
+have yet to be recorded.
