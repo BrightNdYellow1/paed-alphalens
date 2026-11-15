@@ -108,3 +108,38 @@ Use the repository's `app.py` as the main file and `requirements.txt` for depend
 ### Release notes and constraints
 
 No secure account system, persistent storage or verified real-market forecasts are claimed. The app is a bounded, reproducible educational quantitative research prototype. GitHub tests do not substitute for checking the public Streamlit interface and the live AI endpoint.
+
+## Batch evidence pipeline
+
+The batch runner lands the original CSV, validates the schema and values, and
+reuses the Research Trial calculation to produce curated period-level data and
+a JSON evidence report. Each batch is keyed by schema version, case label and
+source SHA-256. A retry targets the same paths. The manifest lists row count
+and output checksums and is written after the curated outputs. A failed
+validation leaves the raw input available for inspection.
+
+Run a local batch:
+
+```bash
+python -m alphalens.pipeline --synthetic --case future-aware --output /tmp/alphalens-evidence
+```
+
+Run against an existing Azure Storage account and private container:
+
+```bash
+pip install -r requirements-azure.txt
+az login
+python -m alphalens.pipeline --synthetic --case future-aware \
+  --azure-account-url https://YOUR_ACCOUNT.blob.core.windows.net --container alphalens
+```
+
+Grant the executing identity Storage Blob Data Contributor on the target
+container. In an Azure-hosted job, configure a managed identity and assign it
+the same container-scoped role. Use a serial runner per batch key. To replace
+the synthetic generator, pass `--input file.csv` with columns
+`period,market_return,position`; the case label describes the known construction
+and is supplied by the operator. Use synthetic or appropriately licensed research
+data for the portfolio demonstration.
+
+Azure deployment and cloud scheduling require an Azure environment. The batch
+runner does not provision infrastructure or schedule itself.
