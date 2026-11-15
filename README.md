@@ -170,3 +170,61 @@ downloads artifacts to compare their hashes, checks that the rejected batch
 contains only the unchanged raw input, and verifies the corrected batch.
 The commands require an existing account and container. Live Azure results
 have yet to be recorded.
+
+### Queryable research catalog
+
+Add `--catalog catalog.db` to either pipeline command to record execution
+attempts and load successful batches into SQLite. The catalog distinguishes
+a **batch**, keyed by version, case and input SHA-256, from a **run**, which
+records one execution attempt with its own start time, end time and status.
+The observation primary key is `(batch_id, period)`. Batch and observation
+inserts share a transaction. A repeat run records a new attempt without
+duplicating the already loaded observations.
+
+Run the synthetic drill from the repository root:
+
+```bash
+python -m scripts.catalog_drill
+```
+
+The drill deliberately runs the future-aware case twice, the clean case
+once, and a CSV with a duplicate period once. It verifies three completed
+attempts, one rejection, two unique batches, and 840 observations. It writes
+the SQLite catalog and summary under `catalog-evidence/`. The GitHub Actions
+workflow collects the same evidence and logs. Its Monday 08:23 UTC schedule
+takes effect when the workflow is on the default branch. The scheduled drill
+uses synthetic data and local job storage; the separate Azure verification
+command is required to evidence a live Blob Storage run.
+
+Example queries for an analyst:
+
+```sql
+-- Join period-level equity curves to the dataset that produced them.
+SELECT b.case_label, o.period, o.original_equity, o.corrected_equity
+FROM batches AS b JOIN observations AS o USING (batch_id)
+WHERE o.period < 5 ORDER BY b.case_label, o.period;
+
+-- Compare the labelled backtests and retain their input lineage.
+SELECT case_label, source_sha256, row_count, original_sharpe,
+       corrected_sharpe, original_sharpe - corrected_sharpe AS sharpe_gap
+FROM batches ORDER BY case_label;
+
+-- Triage attempts that did not complete.
+SELECT run_id, batch_id, status, started_at, ended_at, error_type, error_message
+FROM runs WHERE status <> 'completed' ORDER BY run_id DESC;
+```
+
+A `rejected` attempt failed input validation. Inspect the preserved raw CSV,
+correct it upstream and resubmit. A `failed` attempt indicates an operational
+error. For a storage permission failure, check the executing identity, account,
+container and data role before retrying the same bytes. An abruptly interrupted
+process can leave a `running` attempt. Check the runner before retrying. The
+object-store manifest and the SQLite transaction are separate publication
+steps; if catalog loading fails after publication, the retained manifest can
+be checked and the original batch rerun to repair the catalog.
+
+The public workflow uses synthetic data and uploads only its test artifacts.
+Use an authenticated Azure identity with container-level access for Blob
+Storage. If adapting this pattern for NHS data, keep identifiable records and
+artifacts within the approved environment, restrict access by role, and agree
+retention, audit logging and access controls with information governance.
