@@ -13,6 +13,10 @@ import pandas as pd
 from alphalens.core import investigate, synthetic_case
 
 
+class InvalidBatch(ValueError):
+    """Input failed schema or data-quality validation."""
+
+
 def transform(raw, contaminated):
     frame = pd.read_csv(BytesIO(raw))
     columns = ["period", "market_return", "position"]
@@ -32,24 +36,64 @@ def transform(raw, contaminated):
     }, len(frame)
 
 
-def run(raw, contaminated, write):
-    source_hash = sha256(raw).hexdigest()
+def batch_id(raw, contaminated):
     case = "future-aware" if contaminated else "clean-control"
-    batch = f"v1/{case}/{source_hash}"
+    return f"v1/{case}/{sha256(raw).hexdigest()}"
+
+
+def run(raw, contaminated, write):
+    batch = batch_id(raw, contaminated)
     write(f"{batch}/raw.csv", raw)
-    outputs, rows = transform(raw, contaminated)
+    try:
+        outputs, rows = transform(raw, contaminated)
+    except ValueError as error:
+        raise InvalidBatch(str(error)) from error
     for name, content in outputs.items():
         write(f"{batch}/{name}", content)
     manifest = {
         "batch": batch,
         "schema_version": 1,
-        "source_sha256": source_hash,
+        "source_sha256": sha256(raw).hexdigest(),
         "rows": rows,
         "completed_at_utc": datetime.now(timezone.utc).isoformat(),
         "outputs": {name: sha256(content).hexdigest() for name, content in outputs.items()},
     }
     write(f"{batch}/manifest.json", json.dumps(manifest, indent=2).encode())
     return manifest
+
+
+
+def run_with_catalog(raw, contaminated, write, catalog_path):
+    from alphalens.catalog import finish_run, load_batch, open_catalog, start_run
+
+    outputs = {}
+
+    def publish(path, content):
+        write(path, content)
+        name = path.rsplit("/", 1)[-1]
+        if name in {"curated.csv", "evidence.json"}:
+            outputs[name] = content
+
+    with open_catalog(catalog_path) as connection:
+        run_id = start_run(connection, batch_id(raw, contaminated))
+        try:
+            manifest = run(raw, contaminated, publish)
+            with connection:
+                load_batch(connection, manifest, outputs)
+                finish_run(connection, run_id, "completed")
+        except InvalidBatch as error:
+            with connection:
+                finish_run(connection, run_id, "rejected", type(error).__name__, str(error))
+            raise
+        except Exception as error:
+            # Remote error strings may contain request details. Store only the type and status.
+            status = getattr(error, "status_code", None)
+            detail = f"HTTP {status}" if isinstance(status, int) else None
+            with connection:
+                finish_run(connection, run_id, "failed", type(error).__name__, detail)
+            raise
+
+        return manifest
 
 
 def main():
@@ -62,9 +106,15 @@ def main():
     destination.add_argument("--output", type=Path)
     destination.add_argument("--azure-account-url")
     parser.add_argument("--container", default="alphalens")
+    parser.add_argument("--catalog", type=Path, help="Record attempts and curated rows in SQLite")
     args = parser.parse_args()
     contaminated = args.case == "future-aware"
     raw = synthetic_case(contaminated).to_csv(index=False).encode() if args.synthetic else args.input.read_bytes()
+
+    def execute(write):
+        if args.catalog:
+            return run_with_catalog(raw, contaminated, write, args.catalog)
+        return run(raw, contaminated, write)
 
     if args.azure_account_url:
         from azure.identity import DefaultAzureCredential
@@ -73,14 +123,14 @@ def main():
         with DefaultAzureCredential() as credential:
             with BlobServiceClient(args.azure_account_url, credential=credential) as service:
                 container = service.get_container_client(args.container)
-                manifest = run(raw, contaminated, lambda path, data: container.upload_blob(path, data, overwrite=True))
+                manifest = execute(lambda path, data: container.upload_blob(path, data, overwrite=True))
     else:
         def write(path, data):
             target = args.output / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
 
-        manifest = run(raw, contaminated, write)
+        manifest = execute(write)
     print(json.dumps(manifest, indent=2))
 
 

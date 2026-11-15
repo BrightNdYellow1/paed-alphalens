@@ -1,0 +1,38 @@
+name: AlphaLens synthetic catalog drill
+on:
+  pull_request:
+    paths:
+      - alphalens/catalog.py
+      - alphalens/pipeline.py
+      - scripts/catalog_drill.py
+      - .github/workflows/catalog-drill.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "23 8 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - name: Verify batch and rejection handling
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p catalog-evidence
+          python -m scripts.catalog_drill 2>&1 | tee catalog-evidence/run.log
+      - name: Upload synthetic run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-catalog-evidence
+          path: catalog-evidence/
+          retention-days: 14
