@@ -50,3 +50,9 @@ The small practice counts are safe to share here because all inputs are invented
 A real SDE release would require an approved purpose, controlled access,
 documented linkage and field definitions, and disclosure review of any outputs.
 This lab does not implement those controls or connect to a live SDE.
+
+## Azure job
+
+The [Azure job guide](azure/README.md) describes deploying the same synthetic
+workflow with managed identity, collecting execution evidence and testing
+recovery from a rejected feed.
