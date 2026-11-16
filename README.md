@@ -235,3 +235,9 @@ The [SQL Server lab](sql-server-lab/README.md) adds a T-SQL warehouse load,
 data-quality drill, reporting view and backup/restore reconciliation using
 the existing synthetic AlphaLens results. It includes separate Windows
 exercises for SSIS, SSRS and SSAS.
+
+## Synthetic health-data research example
+
+The [vaccination evidence lab](sde-lab/README.md) demonstrates how source
+definitions, review status and provenance affect interpretation of a linked
+dataset. It is separate from the quantitative research workflows.
