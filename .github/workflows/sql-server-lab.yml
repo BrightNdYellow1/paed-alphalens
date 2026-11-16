@@ -1,0 +1,59 @@
+name: SQL Server warehouse lab
+on:
+  push:
+    paths:
+      - 'sql-server-lab/**'
+      - '.github/workflows/sql-server-lab.yml'
+      - 'alphalens/**'
+  pull_request:
+    paths:
+      - 'sql-server-lab/**'
+      - '.github/workflows/sql-server-lab.yml'
+      - 'alphalens/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sql-server-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generate synthetic fixtures
+        run: |
+          python -m pip install numpy pandas
+          PYTHONPATH=. python sql-server-lab/prepare_drill.py "$RUNNER_TEMP/alphalens-sql"
+      - name: Run load, recovery and reconciliation on SQL Server 2022
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MSSQL_SA_PASSWORD="Alpha-$(openssl rand -hex 16)-9!"
+          export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"
+          echo "::add-mask::$MSSQL_SA_PASSWORD"
+          docker run -d --name alphalens-sql -e ACCEPT_EULA=Y -e MSSQL_PID=Developer \
+            -e MSSQL_SA_PASSWORD mcr.microsoft.com/mssql/server:2022-latest
+          sql() {
+            docker exec -i -e SQLCMDPASSWORD alphalens-sql \
+              /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b "$@"
+          }
+          for attempt in {1..60}; do
+            if sql -l 2 -Q "SELECT 1" >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          sql -l 2 -Q "SELECT @@VERSION"
+          sql < sql-server-lab/schema.sql
+          sql < "$RUNNER_TEMP/alphalens-sql/drill.sql" | tee "$RUNNER_TEMP/alphalens-sql/load-results.txt"
+          sql < sql-server-lab/report.sql | tee "$RUNNER_TEMP/alphalens-sql/report-results.txt"
+          sql < sql-server-lab/recovery.sql | tee "$RUNNER_TEMP/alphalens-sql/recovery-results.txt"
+      - name: Save verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sql-server-warehouse-evidence
+          path: ${{ runner.temp }}/alphalens-sql/*-results.txt
+          if-no-files-found: ignore
