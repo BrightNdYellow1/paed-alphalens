@@ -60,3 +60,7 @@ use measures `Observations := COUNTROWS(Observation)` and
 
 Capture the package log, a report export and the Tabular query result when
 you run each exercise. Those are separate evidence from the T-SQL drill.
+
+The [Windows BI artifacts](bi/README.md) include a package builder, an RDL
+report and generated Tabular deployment commands, with steps for running
+each against the lab warehouse.
