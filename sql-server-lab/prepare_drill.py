@@ -13,7 +13,15 @@ def fixture():
     raw = synthetic_case().to_csv(index=False).encode()
     outputs, count = transform(raw, True)
     finding = json.loads(outputs["evidence.json"])
-    observations = list(csv.DictReader(StringIO(outputs["curated.csv"].decode())))
+    observations = []
+    for row in csv.DictReader(StringIO(outputs["curated.csv"].decode())):
+        observations.append({
+            "period": int(row["period"]),
+            "market_return": float(row["market_return"]),
+            "position": float(row["position"]),
+            "original_equity": float(row["original"]),
+            "corrected_equity": float(row["corrected"]),
+        })
     return {
         "case_label": finding["case"],
         "row_count": count,
@@ -41,7 +49,7 @@ def main():
     rejected_rows[1]["period"] = rejected_rows[0]["period"]
     invalid = dict(valid, row_count=3, observations=rejected_rows)
     corrected_rows = [dict(row) for row in rejected_rows]
-    corrected_rows[1]["period"] = "1"
+    corrected_rows[1]["period"] = 1
     corrected = dict(invalid, observations=corrected_rows)
 
     for name, payload in [("valid", valid), ("invalid", invalid), ("corrected", corrected)]:
