@@ -1,0 +1,4 @@
+[
+  {"local_id": "N10", "event": "DEMO-1", "recorded_date": "2026-01-12", "state": "verified"},
+  {"local_id": "N20", "event": "DEMO-1", "recorded_date": "2026-01-15", "state": "open"}
+]

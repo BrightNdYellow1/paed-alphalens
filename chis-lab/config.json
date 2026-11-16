@@ -1,0 +1,20 @@
+{
+  "units": {
+    "unit-north": {
+      "fields": {"child": "local_id", "dose": "event", "date": "recorded_date", "status": "state"},
+      "crosswalk": {"N10": "C01", "N20": "C02"},
+      "dose_codes": {"DEMO-1": "hypothetical-dose-1"},
+      "status_codes": {"verified": "confirmed", "open": "awaiting_review"}
+    },
+    "unit-south": {
+      "fields": {"child": "child_key", "dose": "dose_code", "date": "evidence_date", "status": "review_code"},
+      "crosswalk": {"S08": "C01", "S09": "C03"},
+      "dose_codes": {"X1": "hypothetical-dose-1"},
+      "status_codes": {"V": "confirmed", "R": "awaiting_review"}
+    }
+  },
+  "expected": {
+    "source_rows": {"unit-north": 2, "unit-south": 2},
+    "target_status_counts": {"confirmed": 1, "awaiting_review": 2}
+  }
+}

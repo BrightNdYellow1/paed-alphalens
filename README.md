@@ -241,3 +241,7 @@ exercises for SSIS, SSRS and SSAS.
 The [vaccination evidence lab](sde-lab/README.md) demonstrates how source
 definitions, review status and provenance affect interpretation of a linked
 dataset. It is separate from the quantitative research workflows.
+
+The [synthetic CHIS consolidation rehearsal](chis-lab/README.md) demonstrates
+source-to-target mapping, reconciliation and a go/no-go report using two
+fictional child-health units.
