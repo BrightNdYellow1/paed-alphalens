@@ -241,3 +241,7 @@ exercises for SSIS, SSRS and SSAS.
 The [vaccination evidence lab](sde-lab/README.md) demonstrates how source
 definitions, review status and provenance affect interpretation of a linked
 dataset. It is separate from the quantitative research workflows.
+
+The [patient pathway reporting lab](pathway-lab/README.md) uses fabricated
+referrals to demonstrate SQL reconciliation and provides source files for
+building the corresponding Power BI report.

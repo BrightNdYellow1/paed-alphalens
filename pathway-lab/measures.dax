@@ -1,0 +1,21 @@
+// Add each measure separately in Power BI Desktop to the Pathways table.
+
+Referrals = COALESCE(COUNTROWS(Pathways), 0)
+
+Attended Referrals = COALESCE(
+    CALCULATE(COUNTROWS(Pathways), KEEPFILTERS(Pathways[status] = "attended")), 0
+)
+
+Open Referrals = COALESCE(
+    CALCULATE(COUNTROWS(Pathways), KEEPFILTERS(Pathways[status] = "open")), 0
+)
+
+Cancelled Referrals = COALESCE(
+    CALCULATE(COUNTROWS(Pathways), KEEPFILTERS(Pathways[status] = "cancelled")), 0
+)
+
+Mean Attended Wait (Days) = CALCULATE(
+    AVERAGE(Pathways[wait_days]), KEEPFILTERS(Pathways[status] = "attended")
+)
+
+Status Reconciliation = [Referrals] - [Attended Referrals] - [Open Referrals] - [Cancelled Referrals]
