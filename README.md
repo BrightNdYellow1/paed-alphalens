@@ -228,3 +228,10 @@ Use an authenticated Azure identity with container-level access for Blob
 Storage. If adapting this pattern for NHS data, keep identifiable records and
 artifacts within the approved environment, restrict access by role, and agree
 retention, audit logging and access controls with information governance.
+
+## SQL Server warehouse lab
+
+The [SQL Server lab](sql-server-lab/README.md) adds a T-SQL warehouse load,
+data-quality drill, reporting view and backup/restore reconciliation using
+the existing synthetic AlphaLens results. It includes separate Windows
+exercises for SSIS, SSRS and SSAS.
