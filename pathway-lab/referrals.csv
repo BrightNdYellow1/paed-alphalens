@@ -1,0 +1,10 @@
+referral_id,site,specialty,referral_date,first_attendance_date,status
+R01,Fictional North,Cardiology,2026-10-01,2026-10-11,attended
+R02,Fictional North,Cardiology,2026-10-02,2026-10-26,attended
+R03,Fictional North,Cardiology,2026-10-05,,open
+R04,Fictional South,Dermatology,2026-10-08,,cancelled
+R05,Fictional South,Dermatology,2026-10-09,2026-10-16,attended
+R06,Fictional South,Dermatology,2026-11-01,,open
+R07,Fictional North,Cardiology,2026-11-02,2026-11-01,attended
+R08,Fictional South,Dermatology,2026-11-04,,attended
+R05,Fictional South,Dermatology,2026-10-09,2026-10-16,attended
