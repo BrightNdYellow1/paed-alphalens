@@ -33,3 +33,27 @@ def test_unknown_local_id_and_missing_source_row_block_cutover():
     assert report["decision"] == "NO_GO"
     assert report["per_unit"]["unit-south"]["unmapped"] == 1
     assert any("source row count" in reason for reason in report["reasons"])
+
+
+def test_queue_drill_blocks_ownerless_task_even_when_counts_reconcile():
+    from alphalens.chis_queue_drill import drill
+
+    scenario = Path(__file__).resolve().parents[1] / "chis-lab"
+    results = drill(scenario)
+    broken = results["after_simulated_merge"]["review_queue"]
+    assert broken["visible_tasks"] == 1
+    assert next(task for task in broken["tasks"] if task["issue"])["synthetic_child"] == "C03"
+    assert results["after_correction"]["review_queue"]["visible_tasks"] == 2
+
+
+def test_routed_task_without_access_blocks_cutover():
+    scenario = Path(__file__).resolve().parents[1] / "chis-lab"
+    config = json.loads((scenario / "config.json").read_bytes())
+    config["review_queue"]["visible_queues"]["Review South"] = []
+    sources = {path.stem: path.read_bytes() for path in scenario.glob("unit-*.json")}
+
+    report = assess(json.dumps(config).encode(), sources)
+
+    assert report["decision"] == "NO_GO"
+    assert report["review_queue"]["unassigned"] == 0
+    assert report["review_queue"]["not_visible"] == 1

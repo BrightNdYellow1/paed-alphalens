@@ -40,3 +40,42 @@ Do not change the baseline merely to pass reconciliation.
 The dry run uses one hypothetical dose and a pre-supplied identity crosswalk.
 A real migration needs approved tooling, governed data access, stakeholder
 sign-off, clinical safety assurance and separate testing of local interfaces.
+
+## Review queues and repeat audit
+
+```bash
+python -m alphalens.chis_queue_drill --scenario chis-lab --output queue-audit.json
+```
+
+The drill runs the same unit files through three configuration snapshots.
+The source hashes and proposed record counts stay the same throughout.
+Only the routing configuration changes.
+
+| Phase | Proposed records | Visible review tasks | Unassigned | Decision |
+|---|---:|---:|---:|---|
+| Baseline | 3 | 2 of 2 | 0 | GO |
+| Simulated merge with missing South route | 3 | 1 of 2 | 1 | NO_GO |
+| After the route is restored | 3 | 2 of 2 | 0 | GO |
+
+Each task records its fictional owner, contributing units, any exception
+and the next action. The acceptance check also blocks an ambiguous route
+or a task that the assigned team cannot see under the simulated access
+settings. A reviewer can use the stored snapshots to compare outcomes
+without editing the original unit files.
+
+### Staff walkthrough
+
+1. Take the role of Review South. Find synthetic child C03 and explain why
+   there should be a review task. Check the baseline result.
+2. Find C03 in the simulated merge snapshot. The task is present in the
+   audit, but its owner is missing. Compare its source unit to the routes
+   in the mapping. Restore the agreed route and rerun to verify visibility.
+3. As a separate fault, copy the scenario and set Review South's list in
+   visible_queues to an empty list. Run chis_merge against the copy. C03
+   has an owner but is not visible. Restore the simulated access and
+   rerun. Explain why this fix differs from restoring a route.
+4. Ask a colleague to repeat the exercise from these instructions and
+   record where they needed guidance and what made the problem clear.
+
+The walkthrough is for practising how to investigate and explain a change.
+The route and access checks are synthetic and do not configure SystmOne.

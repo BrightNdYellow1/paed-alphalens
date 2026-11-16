@@ -1,10 +1,48 @@
 """Rehearse reconciliation for two fabricated child health units."""
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date
 from hashlib import sha256
 import json
 from pathlib import Path
+
+
+def audit_review_queue(settings, awaiting, source_units):
+    routes = settings["routes"]
+    visible_queues = settings["visible_queues"]
+    tasks = []
+    issues = Counter({kind: 0 for kind in ("unassigned", "ambiguous_route", "not_visible")})
+    for child, dose in sorted(awaiting):
+        units = sorted(source_units[(child, dose)])
+        owners = {routes.get(unit) for unit in units}
+        owner = None
+        issue = None
+        if None in owners:
+            issue = "unassigned"
+        elif len(owners) != 1:
+            issue = "ambiguous_route"
+        else:
+            owner = owners.pop()
+            if owner not in visible_queues.get(owner, []):
+                issue = "not_visible"
+        if issue:
+            issues[issue] += 1
+        tasks.append({
+            "synthetic_child": child, "dose": dose, "source_units": units,
+            "owner": owner, "issue": issue,
+            "next_action": {
+                "unassigned": "Restore the agreed team route and rerun",
+                "ambiguous_route": "Agree one owner across contributing units",
+                "not_visible": "Check the assigned team's simulated queue access",
+                None: "Review evidence in the assigned queue",
+            }[issue],
+        })
+    return {
+        "expected_tasks": len(tasks),
+        "visible_tasks": len(tasks) - sum(issues.values()),
+        **issues,
+        "tasks": tasks,
+    }
 
 
 def assess(config_bytes, source_bytes):
@@ -16,6 +54,7 @@ def assess(config_bytes, source_bytes):
     totals = {}
     target = {}
     conflicts = set()
+    source_units = defaultdict(set)
     for unit, raw in sorted(source_bytes.items()):
         settings = units[unit]
         rows = json.loads(raw)
@@ -46,6 +85,7 @@ def assess(config_bytes, source_bytes):
 
             key = (child, dose)
             record = (observed.isoformat(), status)
+            source_units[key].add(unit)
             if key not in target:
                 target[key] = record
                 counts["mapped"] += 1
@@ -69,7 +109,17 @@ def assess(config_bytes, source_bytes):
     if dict(statuses) != expected["target_status_counts"]:
         blocked.append("Proposed target counts do not match the signed-off baseline")
 
+    queue = None
+    if "review_queue" in config:
+        awaiting = [key for key, record in target.items()
+                    if key not in conflicts and record[1] == "awaiting_review"]
+        queue = audit_review_queue(config["review_queue"], awaiting, source_units)
+        if queue["expected_tasks"] != expected["target_status_counts"].get("awaiting_review", 0):
+            blocked.append("Review task total does not match the signed-off baseline")
+        if queue["visible_tasks"] != queue["expected_tasks"]:
+            blocked.append("Outstanding review tasks lack an agreed owner or staff visibility")
     return {
+        **({"review_queue": queue} if queue is not None else {}),
         "decision": "NO_GO" if blocked else "GO",
         "scope": "Synthetic rehearsal only. No EPR writes.",
         "reasons": blocked,

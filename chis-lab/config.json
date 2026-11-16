@@ -13,6 +13,10 @@
       "status_codes": {"V": "confirmed", "R": "awaiting_review"}
     }
   },
+  "review_queue": {
+    "routes": {"unit-north": "Review North", "unit-south": "Review South"},
+    "visible_queues": {"Review North": ["Review North"], "Review South": ["Review South"]}
+  },
   "expected": {
     "source_rows": {"unit-north": 2, "unit-south": 2},
     "target_status_counts": {"confirmed": 1, "awaiting_review": 2}
